@@ -695,8 +695,8 @@ async function submitPaste() {
       c: chatEnc.ct, i: chatEnc.iv, g: chatEnc.tag,
     })
 
-    // Optimistic Update for Paste
-    messages.value.push({
+    // Optimistic Update for Paste : We should remove it to avoid render of attachement 2 times
+/*    messages.value.push({
       id: newPaste.id,
       sender_id: myId.value,
       isPaste: true,
@@ -704,7 +704,7 @@ async function submitPaste() {
       ts: new Date().toISOString(),
       edit_count: 0,
       deleted_at: null
-    })
+    }) */
 
     closePasteModal()
     scrollToBottom()
