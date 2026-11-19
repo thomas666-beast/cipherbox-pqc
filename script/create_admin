@@ -1,0 +1,38 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use lib 'lib';
+use Mojo::Pg;
+use Mojo::File 'path';
+
+my $root      = path(__FILE__)->dirname->dirname;
+my $conf_file = $root->child('cipherbox.conf');
+my $config    = do $conf_file->to_string;
+die "Cannot read $conf_file: $!" unless defined $config;
+
+my $env = $ENV{CIPHERBOX_ENV} // 'development';
+my $dsn = $env eq 'test'
+    ? $config->{test}{pg}{dsn}
+    : $config->{pg}{dsn};
+
+my ($username) = @ARGV;
+die "Usage: $0 <username>\n" unless $username;
+
+my $pg = Mojo::Pg->new($dsn);
+my $db = $pg->db;
+
+my $existing = $db->query('SELECT id FROM users WHERE username = ?', $username)->hash;
+
+if ($existing) {
+    $db->query("UPDATE users SET role = 'admin' WHERE id = ?", $existing->{id});
+    print "User '$username' promoted to admin.\n";
+} else {
+    # Create the user with a dummy password hash (since they will use PQC)
+    $db->query(
+        "INSERT INTO users (username, password_hash, role) VALUES (?, 'PQC-ONLY', 'admin')",
+        $username
+    );
+    print "Admin '$username' created.\n";
+}
+
+1;
